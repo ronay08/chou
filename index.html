@@ -4962,42 +4962,46 @@ db.version(21).stores({
         // ===================================================================
         // 3. 所有功能函数定义
         // ===================================================================
-
+        
 function showScreen(screenId) {
-            // ▼▼▼ 底栏残留问题修复 ▼▼▼
+            // Part 1: Centralized Screen Visibility Control
+            // 步骤一：先让目标屏幕“可见”。这是最优先的操作。
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const screenToShow = document.getElementById(screenId);
+            
+            if (!screenToShow) {
+                console.error(`错误：尝试显示的屏幕不存在: ${screenId}`);
+                return; // 如果屏幕ID无效，则停止执行，防止错误
+            }
+            screenToShow.classList.add('active');
+
+            // Part 2: Centralized Post-Show Logic (Render, Bind Events, etc.)
+            // 步骤二：在屏幕可见后，再执行渲染和其它逻辑。这是解决“点不动”问题的关键。
+            
+            // 统一处理底部导航栏的显示/隐藏 (修复底栏残留问题)
             const bottomNav = document.getElementById('chat-list-bottom-nav');
             if (screenId !== 'chat-list-screen') {
                 bottomNav.style.display = 'none';
             }
-            // ▲▲▲ 底栏修复结束 ▲▲▲
 
-            // ▼▼▼ 【核心修复】解决聊天白屏问题 ▼▼▼
-            // 在显示任何屏幕之前，先调用对应的渲染函数把内容画出来
-            if (screenId === 'chat-list-screen') window.renderChatListProxy();
-            if (screenId === 'api-settings-screen') window.renderApiSettingsProxy();
-            if (screenId === 'wallpaper-screen') window.renderWallpaperScreenProxy();
-            if (screenId === 'world-book-screen') window.renderWorldBookScreenProxy();
-            
-            // 【关键新增行】确保在显示聊天界面前，先渲染聊天内容
-            if (screenId === 'chat-interface-screen') window.renderChatInterfaceProxy(); 
-            
-            // ▲▲▲ 白屏修复结束 ▲▲▲
-
-            // 切换屏幕的显示状态
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const screenToShow = document.getElementById(screenId);
-            if (screenToShow) screenToShow.classList.add('active');
-
-            // 其他屏幕切换后的附加操作
-            if (screenId === 'chat-interface-screen') window.updateListenTogetherIconProxy(state.activeChatId);
-            if (screenId === 'font-settings-screen') {
+            // 根据不同的屏幕ID，执行对应的渲染和初始化函数
+            if (screenId === 'chat-list-screen') {
+                window.renderChatListProxy();
+                // 默认显示“消息”视图
+                switchToChatListView('messages-view'); 
+            } else if (screenId === 'chat-interface-screen') {
+                // 在屏幕可见后渲染聊天界面，确保事件能正确绑定
+                window.renderChatInterfaceProxy(); 
+                window.updateListenTogetherIconProxy(state.activeChatId);
+            } else if (screenId === 'api-settings-screen') {
+                window.renderApiSettingsProxy();
+            } else if (screenId === 'wallpaper-screen') {
+                window.renderWallpaperScreenProxy();
+            } else if (screenId === 'world-book-screen') {
+                window.renderWorldBookScreenProxy();
+            } else if (screenId === 'font-settings-screen') {
                 document.getElementById('font-url-input').value = state.globalSettings.fontUrl || '';
                 applyCustomFont(state.globalSettings.fontUrl || '', true);
-            }
-
-            // 切换到聊天列表时，默认显示消息视图
-            if (screenId === 'chat-list-screen') {
-                switchToChatListView('messages-view');
             }
         }
         window.updateListenTogetherIconProxy = () => {};
