@@ -5882,10 +5882,7 @@ else if (!chat.isGroup && chat.relationship?.status === 'blocked_by_ai') {
         });
     }
     
-    const infoEl = item.querySelector('.info');
-    if (infoEl) {
-        infoEl.addEventListener('click', () => openChat(chat.id));
-    }
+  
 
     addLongPressListener(item, async (e) => {
         const confirmed = await showCustomConfirm('删除对话', `确定要删除与 "${chat.name}" 的整个对话吗？此操作不可撤销。`, { confirmButtonClass: 'btn-danger' });
@@ -12839,24 +12836,17 @@ document.getElementById('call-logs-list').addEventListener('click', (e) => {
 
 // ▲▲▲ 新事件监听器粘贴结束 ▲▲▲
 // ▼▼▼ 【重要】聊天列表点击事件修复 ▼▼▼
-// 这个监听器将负责处理所有在聊天列表中的点击事件，确保能够正确跳转
-// 请确保您的聊天列表的父容器ID是 'messages-view' 并且聊天项的class是 'chat-item'
 const chatListContainer = document.getElementById('messages-view'); 
 if (chatListContainer) {
     chatListContainer.addEventListener('click', (event) => {
-        // 沿着点击路径向上寻找，直到找到一个 class="chat-item" 的元素
-        const chatItem = event.target.closest('.chat-item');
+        // 沿着点击路径向上寻找，直到找到一个 class="chat-list-item" 的元素
+        const chatItem = event.target.closest('.chat-list-item');
         
         // 确保我们找到了一个聊天项目，并且它有一个 data-chat-id 属性
         if (chatItem && chatItem.dataset.chatId) {
-            const chatId = parseInt(chatItem.dataset.chatId);
-            console.log(`尝试打开聊天, ID: ${chatId}`); // 这行日志可以帮助调试
-            
-            // 设置当前活跃的聊天ID
-            state.activeChatId = chatId;
-            
-            // 显示聊天界面
-            showScreen('chat-interface-screen');
+            // 直接使用字符串ID调用现有的、正确的函数
+            const chatId = chatItem.dataset.chatId;
+            openChat(chatId);
         }
     });
 } else {
