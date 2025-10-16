@@ -4963,43 +4963,24 @@ db.version(21).stores({
         // 3. 所有功能函数定义
         // ===================================================================
         
+//  ▼▼▼ 请用这段正确的代码替换 ▼▼▼
 function showScreen(screenId) {
-        // 步骤一：先让目标屏幕“可见”。这是最优先的操作。
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const screenToShow = document.getElementById(screenId);
-        
-        if (!screenToShow) {
-            console.error(`错误：尝试显示的屏幕不存在: ${screenId}`);
-            return; // 如果屏幕ID无效，则停止执行，防止错误
-        }
-        screenToShow.classList.add('active');
-
-        // 步骤二：在屏幕可见后，再执行渲染和其它逻辑。这是解决交互问题的关键。
-        
-        // 统一处理底部导航栏的显示/隐藏
-        const bottomNav = document.getElementById('chat-list-bottom-nav');
-        if (screenId !== 'chat-list-screen') {
-            bottomNav.style.display = 'none';
-        }
-
-        // 根据不同的屏幕ID，执行对应的渲染和初始化函数
-        if (screenId === 'chat-list-screen') {
-            window.renderChatListProxy();
-            switchToChatListView('messages-view'); 
-        } else if (screenId === 'chat-interface-screen') {
-            window.renderChatInterfaceProxy(); 
-            window.updateListenTogetherIconProxy(state.activeChatId);
-        } else if (screenId === 'api-settings-screen') {
-            window.renderApiSettingsProxy();
-        } else if (screenId === 'wallpaper-screen') {
-            window.renderWallpaperScreenProxy();
-        } else if (screenId === 'world-book-screen') {
-            window.renderWorldBookScreenProxy();
-        } else if (screenId === 'font-settings-screen') {
-            document.getElementById('font-url-input').value = state.globalSettings.fontUrl || '';
-            applyCustomFont(state.globalSettings.fontUrl || '', true);
-        }
+    if (screenId === 'chat-list-screen') {
+        window.renderChatListProxy(); 
+        switchToChatListView('messages-view');
     }
+    if (screenId === 'api-settings-screen') window.renderApiSettingsProxy();
+    if (screenId === 'wallpaper-screen') window.renderWallpaperScreenProxy();
+    if (screenId === 'world-book-screen') window.renderWorldBookScreenProxy();
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const screenToShow = document.getElementById(screenId);
+    if (screenToShow) screenToShow.classList.add('active');
+    if (screenId === 'chat-interface-screen') window.updateListenTogetherIconProxy(state.activeChatId);
+    if (screenId === 'font-settings-screen') {
+        document.getElementById('font-url-input').value = state.globalSettings.fontUrl || '';
+        applyCustomFont(state.globalSettings.fontUrl || '', true);
+    }
+}
         window.updateListenTogetherIconProxy = () => {};
 
         function switchToChatListView(viewId) {
@@ -6519,6 +6500,7 @@ function appendMessage(msg, chat, isInitialLoad = false) {
 // ▲▲▲ 替换结束 ▲▲▲
 
 // ▼▼▼ 用这个【修正后】的版本，替换旧的 openChat 函数 ▼▼▼
+//  ▼▼▼ 请用这段正确的代码替换 ▼▼▼
 function openChat(chatId) {
     state.activeChatId = chatId;
     const chat = state.chats[chatId];
