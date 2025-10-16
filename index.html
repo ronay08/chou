@@ -3683,14 +3683,21 @@
 
     </div>
 
-<!-- ▼▼▼ 【全新】回忆录界面视图 ▼▼▼ -->
+<!-- ▼▼▼ 【全新】回忆录界面视图 (已修正按钮位置) ▼▼▼ -->
 <div id="memories-view" class="chat-list-view">
     <div class="header"> 
         <span class="back-btn" id="memories-back-btn">‹</span>
         <span>我们的回忆</span>
-            <span class="action-btn" id="add-countdown-btn">+</span>
+        <div class="header-actions">
             <span class="action-btn" id="view-call-logs-btn" title="通话记录"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg></span>
+            <span class="action-btn" id="add-countdown-btn">+</span>
         </div>
+    </div>
+    <div id="memories-list" class="list-container" style="padding: 15px; display: flex; flex-direction: column; gap: 15px;">
+        <!-- 回忆卡片将由JS动态生成在这里 -->
+    </div>
+</div>
+<!-- ▲▲▲ 修正结束 ▲▲▲ -->
     <div id="memories-list" class="list-container" style="padding: 15px; display: flex; flex-direction: column; gap: 15px;">
         <!-- 回忆卡片将由JS动态生成在这里 -->
     </div>
