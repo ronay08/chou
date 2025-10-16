@@ -4964,46 +4964,42 @@ db.version(21).stores({
         // ===================================================================
         
 function showScreen(screenId) {
-            // Part 1: Centralized Screen Visibility Control
-            // 步骤一：先让目标屏幕“可见”。这是最优先的操作。
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const screenToShow = document.getElementById(screenId);
-            
-            if (!screenToShow) {
-                console.error(`错误：尝试显示的屏幕不存在: ${screenId}`);
-                return; // 如果屏幕ID无效，则停止执行，防止错误
-            }
-            screenToShow.classList.add('active');
-
-            // Part 2: Centralized Post-Show Logic (Render, Bind Events, etc.)
-            // 步骤二：在屏幕可见后，再执行渲染和其它逻辑。这是解决“点不动”问题的关键。
-            
-            // 统一处理底部导航栏的显示/隐藏 (修复底栏残留问题)
-            const bottomNav = document.getElementById('chat-list-bottom-nav');
-            if (screenId !== 'chat-list-screen') {
-                bottomNav.style.display = 'none';
-            }
-
-            // 根据不同的屏幕ID，执行对应的渲染和初始化函数
-            if (screenId === 'chat-list-screen') {
-                window.renderChatListProxy();
-                // 默认显示“消息”视图
-                switchToChatListView('messages-view'); 
-            } else if (screenId === 'chat-interface-screen') {
-                // 在屏幕可见后渲染聊天界面，确保事件能正确绑定
-                window.renderChatInterfaceProxy(); 
-                window.updateListenTogetherIconProxy(state.activeChatId);
-            } else if (screenId === 'api-settings-screen') {
-                window.renderApiSettingsProxy();
-            } else if (screenId === 'wallpaper-screen') {
-                window.renderWallpaperScreenProxy();
-            } else if (screenId === 'world-book-screen') {
-                window.renderWorldBookScreenProxy();
-            } else if (screenId === 'font-settings-screen') {
-                document.getElementById('font-url-input').value = state.globalSettings.fontUrl || '';
-                applyCustomFont(state.globalSettings.fontUrl || '', true);
-            }
+        // 步骤一：先让目标屏幕“可见”。这是最优先的操作。
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const screenToShow = document.getElementById(screenId);
+        
+        if (!screenToShow) {
+            console.error(`错误：尝试显示的屏幕不存在: ${screenId}`);
+            return; // 如果屏幕ID无效，则停止执行，防止错误
         }
+        screenToShow.classList.add('active');
+
+        // 步骤二：在屏幕可见后，再执行渲染和其它逻辑。这是解决交互问题的关键。
+        
+        // 统一处理底部导航栏的显示/隐藏
+        const bottomNav = document.getElementById('chat-list-bottom-nav');
+        if (screenId !== 'chat-list-screen') {
+            bottomNav.style.display = 'none';
+        }
+
+        // 根据不同的屏幕ID，执行对应的渲染和初始化函数
+        if (screenId === 'chat-list-screen') {
+            window.renderChatListProxy();
+            switchToChatListView('messages-view'); 
+        } else if (screenId === 'chat-interface-screen') {
+            window.renderChatInterfaceProxy(); 
+            window.updateListenTogetherIconProxy(state.activeChatId);
+        } else if (screenId === 'api-settings-screen') {
+            window.renderApiSettingsProxy();
+        } else if (screenId === 'wallpaper-screen') {
+            window.renderWallpaperScreenProxy();
+        } else if (screenId === 'world-book-screen') {
+            window.renderWorldBookScreenProxy();
+        } else if (screenId === 'font-settings-screen') {
+            document.getElementById('font-url-input').value = state.globalSettings.fontUrl || '';
+            applyCustomFont(state.globalSettings.fontUrl || '', true);
+        }
+    }
         window.updateListenTogetherIconProxy = () => {};
 
         function switchToChatListView(viewId) {
@@ -12842,6 +12838,31 @@ document.getElementById('call-logs-list').addEventListener('click', (e) => {
 });
 
 // ▲▲▲ 新事件监听器粘贴结束 ▲▲▲
+// ▼▼▼ 【重要】聊天列表点击事件修复 ▼▼▼
+// 这个监听器将负责处理所有在聊天列表中的点击事件，确保能够正确跳转
+// 请确保您的聊天列表的父容器ID是 'messages-view' 并且聊天项的class是 'chat-item'
+const chatListContainer = document.getElementById('messages-view'); 
+if (chatListContainer) {
+    chatListContainer.addEventListener('click', (event) => {
+        // 沿着点击路径向上寻找，直到找到一个 class="chat-item" 的元素
+        const chatItem = event.target.closest('.chat-item');
+        
+        // 确保我们找到了一个聊天项目，并且它有一个 data-chat-id 属性
+        if (chatItem && chatItem.dataset.chatId) {
+            const chatId = parseInt(chatItem.dataset.chatId);
+            console.log(`尝试打开聊天, ID: ${chatId}`); // 这行日志可以帮助调试
+            
+            // 设置当前活跃的聊天ID
+            state.activeChatId = chatId;
+            
+            // 显示聊天界面
+            showScreen('chat-interface-screen');
+        }
+    });
+} else {
+    console.error('错误：找不到聊天列表容器 #messages-view。请检查您的HTML文件。');
+}
+// ▲▲▲ 点击事件修复结束 ▲▲▲
         init();
     });
 </script>
