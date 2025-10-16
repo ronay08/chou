@@ -3418,6 +3418,54 @@
 .wb-category-content.collapsed {
     max-height: 0;
 }
+/* ▼▼▼ 【全新】通话记录功能样式 ▼▼▼ */
+
+/* 通话记录列表项的样式 */
+.call-log-item {
+    background-color: var(--secondary-bg);
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.call-log-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.call-log-item .info {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.call-log-item .meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+}
+
+/* 通话记录详情页的气泡样式 */
+.log-bubble {
+    padding: 8px 12px;
+    border-radius: 12px;
+    max-width: 85%;
+    line-height: 1.6;
+    word-break: break-word;
+    white-space: pre-wrap;
+    font-size: 14px;
+}
+.log-bubble.assistant {
+    background-color: #f0f2f5;
+    align-self: flex-start; /* AI发言靠左 */
+    color: #333;
+}
+.log-bubble.user {
+    background-color: #007bff; /* 用户发言用主题色 */
+    color: white;
+    align-self: flex-end;   /* 用户发言靠右 */
+}
+/* ▲▲▲ 新CSS粘贴结束 ▲▲▲ */
     </style>
 </head>
 <body>
@@ -3641,11 +3689,44 @@
         <span class="back-btn" id="memories-back-btn">‹</span>
         <span>我们的回忆</span>
             <span class="action-btn" id="add-countdown-btn">+</span>
+            <span class="action-btn" id="view-call-logs-btn" title="通话记录"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg></span>
         </div>
     <div id="memories-list" class="list-container" style="padding: 15px; display: flex; flex-direction: column; gap: 15px;">
         <!-- 回忆卡片将由JS动态生成在这里 -->
     </div>
 </div>
+<!-- ▼▼▼ 【全新】在这里粘贴所有与通话记录相关的新HTML ▼▼▼ -->
+
+<!-- 1. 通话记录列表屏幕 -->
+<div id="call-log-screen" class="screen">
+    <div class="header">
+        <span class="back-btn" id="call-log-back-btn">‹</span>
+        <span>通话记录</span>
+        <span style="width: 30px;"></span>
+    </div>
+    <div id="call-logs-list" class="list-container" style="padding: 15px; display: flex; flex-direction: column; gap: 15px;">
+        <!-- 通话记录列表将由JS动态生成在这里 -->
+    </div>
+</div>
+
+<!-- 2. 通话记录详情屏幕 -->
+<div id="call-log-details-screen" class="screen">
+    <div class="header">
+        <span class="back-btn" id="call-log-details-back-btn">‹</span>
+        <span id="call-log-details-title">通话详情</span>
+        <span style="width: 30px;"></span>
+    </div>
+    <div class="list-container" style="padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+        <div id="call-log-details-summary" style="padding-bottom: 10px; border-bottom: 1px solid #eee; font-size: 13px; color: #666; line-height: 1.6;">
+            <!-- 通话摘要信息将由JS动态生成 -->
+        </div>
+        <div id="call-log-details-content" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;">
+            <!-- 具体的通话对话内容将由JS动态生成 -->
+        </div>
+    </div>
+</div>
+
+<!-- ▲▲▲ 新HTML粘贴结束 ▲▲▲ -->
 <!-- ▲▲▲ 新增HTML结束 ▲▲▲ -->
     
     <!-- 底部导航栏 -->
@@ -9152,51 +9233,64 @@ function startVideoCall() {
     triggerAiInCallAction();
 }
 
+// --- ▼▼▼ 请将上面删除的区域，粘贴为这段【新代码】 ▼▼▼ ---
+
 /**
- * 【核心】结束视频通话
+ * 【核心】结束视频通话 (V3 - 带通话记录保存功能)
  */
 async function endVideoCall() {
     if (!videoCallState.isActive) return;
 
-    const duration = Math.floor((Date.now() - videoCallState.startTime) / 1000);
-    const minutes = Math.floor(duration / 60);
-    const seconds = duration % 60;
-    const durationText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    const endCallText = `通话结束，时长 ${durationText}`;
+    const chatId = videoCallState.activeChatId;
+    const startTime = videoCallState.startTime;
+    const initiator = videoCallState.initiator;
+    const callHistory = [...videoCallState.callHistory];
+    const callRequester = videoCallState.callRequester;
+    // 【新增】获取参与者信息
+    const participants = [...videoCallState.participants]; 
+    const isGroupCall = videoCallState.isGroupCall;
 
-    const chat = state.chats[videoCallState.activeChatId];
+    clearInterval(callTimerInterval);
+    callTimerInterval = null;
+    videoCallState = { isActive: false, isAwaitingResponse: false, isGroupCall: false, activeChatId: null, initiator: null, startTime: null, participants: [], isUserParticipating: true, callHistory: [], preCallContext: "" };
+
+    const chat = state.chats[chatId];
     if (chat) {
+        openChat(chat.id);
+    } else {
+        showScreen('chat-list-screen');
+    }
+
+    if (chat) {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(duration / 60);
+        const seconds = duration % 60;
+        const durationText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         
-        // --- 【核心重构：创建通话总结消息】 ---
-        let summaryMessage = {
-            role: videoCallState.initiator === 'user' ? 'user' : 'assistant',
-            content: endCallText,
-            timestamp: Date.now(),
+        // --- ▼▼▼ 【核心新增：保存通话记录到'memories'数据库】 ▼▼▼ ---
+        const newCallLog = {
+            type: 'call_log',
+            chatId: chatId,
+            timestamp: startTime, // 使用通话开始时间作为记录时间
+            duration: duration,
+            callHistory: callHistory,
+            isGroupCall: isGroupCall,
+            participants: participants.map(p => p.name) // 只保存名字数组
         };
-
-        // 【关键】为群聊的 assistant 消息补充 senderName
-        if (chat.isGroup && summaryMessage.role === 'assistant') {
-            // 在群聊中，通话结束的消息应该由“发起者”来说
-            // videoCallState.callRequester 保存了最初发起通话的那个AI的名字
-            summaryMessage.senderName = videoCallState.callRequester || chat.members[0]?.name || chat.name;
-        }
+        await db.memories.add(newCallLog);
+        // --- ▲▲▲ 新增结束 ▲▲▲ ---
         
+        const endCallText = `通话结束，时长 ${durationText}`;
+        let summaryMessage = { role: initiator === 'user' ? 'user' : 'assistant', content: endCallText, timestamp: Date.now() };
+        if (chat.isGroup && summaryMessage.role === 'assistant') {
+            summaryMessage.senderName = callRequester || chat.members[0]?.name || chat.name;
+        }
         chat.history.push(summaryMessage);
-
-        // --- 【核心重构：触发通话总结】---
-        const callSummaryPrompt = `
-# 你的任务
-你是一个对话总结助手。下面的“通话记录”是一段刚刚结束的视频通话内容。请你用1-2句话，精炼地总结出这次通话的核心内容或达成的共识。
-你的总结将作为一条隐藏的系统提示，帮助AI在接下来的聊天中记住这次通话发生了什么。
-
-# 通话记录:
-${videoCallState.callHistory.map(h => `${h.role}: ${h.content}`).join('\n')}
-
-请直接输出总结内容，不要加任何额外的前缀或解释。`;
         
         try {
+            const callSummaryPrompt = `# 你的任务...\n# 通话记录:\n${callHistory.map(h => `${h.role}: ${h.content}`).join('\n')}\n...`;
             const { proxyUrl, apiKey, model } = state.apiConfig;
-            const response = await fetch(`${proxyUrl}/v1/chat/completions`, {
+            const response = await fetch(`${proxyUrl}/v1/chat/completions`, { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
                 body: JSON.stringify({
@@ -9204,7 +9298,7 @@ ${videoCallState.callHistory.map(h => `${h.role}: ${h.content}`).join('\n')}
                     messages: [{ role: 'system', content: callSummaryPrompt }],
                     temperature: 0.5
                 })
-            });
+             });
             if (response.ok) {
                 const data = await response.json();
                 const callSummaryText = data.choices[0].message.content;
@@ -9216,23 +9310,14 @@ ${videoCallState.callHistory.map(h => `${h.role}: ${h.content}`).join('\n')}
                 };
                 chat.history.push(hiddenSummary);
             }
-        } catch (e) {
-            console.error("通话总结失败:", e);
-        }
+        } catch (e) { console.error("通话总结失败:", e); }
 
         await db.chats.put(chat);
-    }
-    
-    // 清理和重置
-    clearInterval(callTimerInterval);
-    callTimerInterval = null;
-    videoCallState = { isActive: false, isAwaitingResponse: false, isGroupCall: false, activeChatId: null, initiator: null, startTime: null, participants: [], isUserParticipating: true, callHistory: [], preCallContext: "" };
-    
-    // 【重要】确保在所有操作完成后再打开聊天
-    if (chat) {
-        openChat(chat.id);
+        renderChatList(); 
     }
 }
+
+// --- ▲▲▲ 新代码结束 ▲▲▲ ---
 
 /**
  * 【全新】更新通话界面的参与者头像网格
@@ -10634,6 +10719,87 @@ async function handleReroll() {
         // ===================================================================
         // 4. 初始化函数 init()
         // ===================================================================
+        // ▼▼▼ 【全新】通话记录功能渲染函数 ▼▼▼
+
+/**
+ * 渲染通话记录列表屏幕
+ */
+async function renderCallLogScreen() {
+    const listEl = document.getElementById('call-logs-list');
+    listEl.innerHTML = '';
+
+    const logs = await db.memories.where('type').equals('call_log').reverse().sortBy('timestamp');
+
+    if (logs.length === 0) {
+        listEl.innerHTML = '<p style="text-align:center; color: var(--text-secondary); padding: 50px 0;">还没有任何通话记录。</p>';
+        return;
+    }
+
+    logs.forEach(log => {
+        const chat = state.chats[log.chatId];
+        if (!chat) return;
+
+        const minutes = Math.floor(log.duration / 60);
+        const seconds = log.duration % 60;
+        const durationText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        const callDate = new Date(log.timestamp).toLocaleString();
+
+        const item = document.createElement('div');
+        item.className = 'call-log-item';
+        item.dataset.memoryId = log.id;
+        item.innerHTML = `
+            <div class="info">与 ${chat.name} 的通话</div>
+            <div class="meta">
+                <span>${callDate}</span>
+                <span>时长: ${durationText}</span>
+            </div>
+        `;
+        listEl.appendChild(item);
+    });
+}
+
+/**
+ * 渲染指定的通话记录详情
+ * @param {number} memoryId - 通话记录在memories表中的ID
+ */
+async function renderCallLogDetailsScreen(memoryId) {
+    const log = await db.memories.get(memoryId);
+    if (!log || log.type !== 'call_log') return;
+
+    const chat = state.chats[log.chatId];
+    if (!chat) return;
+
+    // 更新标题和摘要
+    document.getElementById('call-log-details-title').textContent = `与 ${chat.name} 的通话`;
+    const summaryEl = document.getElementById('call-log-details-summary');
+    const minutes = Math.floor(log.duration / 60);
+    const seconds = log.duration % 60;
+    summaryEl.innerHTML = `
+        <p style="margin:0 0 5px 0;"><b>通话时间:</b> ${new Date(log.timestamp).toLocaleString()}</p>
+        <p style="margin:0 0 5px 0;"><b>通话时长:</b> ${minutes}分 ${seconds}秒</p>
+        <p style="margin:0;"><b>参与者:</b> ${log.isGroupCall ? log.participants.join('、 ') : chat.name}</p>
+    `;
+
+    // 渲染对话内容
+    const contentEl = document.getElementById('call-log-details-content');
+    contentEl.innerHTML = '';
+    log.callHistory.forEach(turn => {
+        const bubble = document.createElement('div');
+        if (turn.role === 'user') {
+            bubble.className = 'log-bubble user';
+            bubble.textContent = turn.content;
+        } else {
+            bubble.className = 'log-bubble assistant';
+            // 对于群聊，显示发言者名字
+            bubble.innerHTML = log.isGroupCall ? `<strong>${turn.content.split(':')[0]}:</strong>${turn.content.substring(turn.content.indexOf(':') + 1)}` : turn.content;
+        }
+        contentEl.appendChild(bubble);
+    });
+
+    showScreen('call-log-details-screen');
+}
+
+// ▲▲▲ 新函数粘贴结束 ▲▲▲
         async function init() {
 
     // ▼▼▼ 新增代码 ▼▼▼
@@ -12616,7 +12782,33 @@ async function renderWorldBookCategoryList() {
             
             showScreen('home-screen');
         }
+// ▼▼▼ 【全新】通话记录功能事件监听器 ▼▼▼
 
+// 1. 绑定“回忆”页面的“通话记录”按钮
+document.getElementById('view-call-logs-btn').addEventListener('click', async () => {
+    await renderCallLogScreen();
+    showScreen('call-log-screen');
+});
+
+// 2. 绑定通话记录列表的返回按钮
+document.getElementById('call-log-back-btn').addEventListener('click', () => {
+    showScreen('memories-view');
+});
+
+// 3. 绑定通话记录详情的返回按钮
+document.getElementById('call-log-details-back-btn').addEventListener('click', () => {
+    showScreen('call-log-screen');
+});
+
+// 4. 使用事件委托处理通话记录列表的点击事件
+document.getElementById('call-logs-list').addEventListener('click', (e) => {
+    const item = e.target.closest('.call-log-item');
+    if (item && item.dataset.memoryId) {
+        renderCallLogDetailsScreen(parseInt(item.dataset.memoryId));
+    }
+});
+
+// ▲▲▲ 新事件监听器粘贴结束 ▲▲▲
         init();
     });
 </script>
